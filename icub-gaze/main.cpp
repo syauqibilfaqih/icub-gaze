@@ -1,5 +1,7 @@
 #include <yarp/os/all.h>
 #include <yarp/sig/all.h>
+#include <cstdlib> 
+#include <ctime>   
 #include <time.h>
 #include <iostream>
 
@@ -13,8 +15,6 @@ int main(int argc, char *argv[]) {
     portRpc.open("/sphere"); // open a new port for sphere
     yarp.connect("/sphere","/icubSim/world"); // connect to the head's port
 
-    // create a new sphere on the window
-    
     // create a new bottle for producing sphere and change its position
     Bottle sphereReq;
 
@@ -40,20 +40,45 @@ int main(int argc, char *argv[]) {
     sphereReq.addFloat64(0);
     portRpc.write(sphereReq);
 
-    // Sending command to move the robot's head in a loop
-    // for(int i=-30; i<31; i++){
-    //     for(int j=0; j<6; j++){
-    //         Bottle req; // using Bottle as the message's data type
-    //         req.addString("set");
-    //         req.addString("pos");
-    //         req.addInt8(j);
-    //         req.addInt8(i);
-    //         port.write(req);
-    //     }
-    //     Time::delay(0.1);
-    // }
+    Time::delay(1);
 
-    
+    // to generate random position of sphere, where it should be located 25 pixel far from the centroid of left eye,
+    // it is probably in the range of (centroid+0.3,centroid+0.4) or (centroid-0.3,centroid-0.4)  
+
+    // variable of last centroid point
+    float lastCentrX = 0.0; 
+    float lastCentrY = 0.9;
+
+    for(int iter=0; iter<6; iter++){        
+        // getting random for each iteration time
+        srand(time(0));
+
+        // to change position of the sphere, the command is world set ssph 1 value_x value_y value_z
+        sphereReq.clear();
+        sphereReq.addString("world");
+        sphereReq.addString("set");
+        sphereReq.addString("ssph");
+        sphereReq.addInt32(1);
+
+        // generate random number in range -0.2 to 0.2
+        float randomRangeX = -0.1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.1+0.1)));
+        float randomRangeY = -0.1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.1+0.1)));
+
+        // 0.2 to make sure that it's 25 pixel away
+        float newCentrX = (randomRangeX<0) ? lastCentrX+randomRangeX-0.2 : lastCentrX+randomRangeX+0.2;
+        float newCentrY = (randomRangeY<0) ? lastCentrY+randomRangeY-0.2 : lastCentrY+randomRangeY+0.2;
+
+        sphereReq.addFloat64(newCentrX);
+        sphereReq.addFloat64(newCentrY);
+        sphereReq.addFloat64(0.8);
+
+        portRpc.write(sphereReq);
+
+        // lastCentrX = newCentrX;
+        // lastCentrY = newCentrY;
+
+        Time::delay(1);
+    }
 
     portRpc.close(); // closing the port after its finished
 
