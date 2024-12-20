@@ -11,14 +11,14 @@ find_package(YARP COMPONENTS os sig dev REQUIRED)
 
 ###################################################
 # add program folders
-# should not be changed, unless it doesen't work :)
+# should not be changed, unless it doesn't work :)
 
 # find all subdirectories
 macro(subdirlist result curdir)
   file(GLOB children RELATIVE ${curdir} ${curdir}/*)
   set(dirlist "")
   foreach(child ${children})
-    if(IS_DIRECTORY ${curdir}/${child})
+    if(IS_DIRECTORY ${curdir}/${child} AND NOT ${child} STREQUAL ".git")
       list(APPEND dirlist ${child})
     endif()
   endforeach()
