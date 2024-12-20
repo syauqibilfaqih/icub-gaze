@@ -29,7 +29,15 @@ yarpserver
 ```
 iCub_SIM
 ```
-3. Open another terminal, and go to the bin directory:
+3. In a new terminal, open the yarpview to see the camera view:
+```
+yarpview --name /viewer &
+```
+it would be empty, thus we need to connect it to the left eye, in a new terminal, run:
+```
+yarp connect /icubSim/cam/left /viewer
+```
+4. Open another terminal, and go to the bin directory:
 ```
 cd <your directory>/icub-gaze/build/bin
 ```
