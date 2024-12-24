@@ -27,10 +27,26 @@ class IcubThread: public PeriodicThread{
 			//opening the controllers we want to use
 			pd.view(ipc);
 			pd.view(enc);	
+            pd.view(ivc);
+            pd.view(icm);
 
             ipc->positionMove(4,0);
             ipc->positionMove(3,0);
+            icm->setControlMode(0,VOCAB_CM_POSITION);
+            icm->setControlMode(2,VOCAB_CM_POSITION);
+            ipc->positionMove(0,0);
+            ipc->positionMove(2,0);
             Time::delay(2);
+
+            // try velocity control
+            // double vel,acc;
+            icm->setControlMode(0,VOCAB_CM_VELOCITY);
+            icm->setControlMode(2,VOCAB_CM_VELOCITY);
+            // ivc->velocityMove(0,0);
+            // Time::delay(2);
+            // ivc->getRefVelocity(0,&vel);
+            // ivc->getRefAcceleration(0,&acc);
+            // cout<<vel<<", "<<acc<<endl;
 		};
 
 	private:		
@@ -38,6 +54,8 @@ class IcubThread: public PeriodicThread{
 		Property prop;
 		PolyDriver pd;
 		IPositionControl * ipc;
+        IVelocityControl * ivc;
+        IControlMode * icm;
 		IEncoders *enc;
 		BufferedPort<ImageOf<PixelRgb>> eyePort;
 		
@@ -95,7 +113,16 @@ class IcubThread: public PeriodicThread{
 			ipc->positionMove(4, eyeHorPosition);	
             ipc->positionMove(3, eyeVerPosition);
 
-            isMovementDone = (errX==0 && errY ==0) ? true : false;
+            if(eyeHorPosition != 0 && eyeEncoderVerPosition != 0){
+                ivc->velocityMove(0,(eyeVerPosition)*0.5);///abs(eyeVerPosition)));
+                ivc->velocityMove(2,-(eyeHorPosition)*0.5);///abs(eyeHorPosition)));
+            }
+            else{
+                ivc->velocityMove(0,0);
+                ivc->velocityMove(2,0);
+            }
+
+            isMovementDone = (abs(errX)<1 && abs(errY)<1 && abs(eyeVerPosition)<0.09 && abs(eyeHorPosition)<0.09) ? true : false;
 
 		}
 		void threadRelease() override {
