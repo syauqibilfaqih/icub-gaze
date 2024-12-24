@@ -1,5 +1,6 @@
 #include <yarp/os/all.h>
 #include <yarp/sig/all.h>
+#include <yarp/dev/all.h>
 #include <cstdlib> 
 #include <ctime>   
 #include <time.h>
@@ -7,6 +8,101 @@
 
 using namespace yarp::os;
 using namespace yarp::sig;
+using namespace yarp::dev;
+using namespace std;
+
+class IcubThread: public PeriodicThread{
+	public:
+        bool isMovementDone;
+		IcubThread(double period):PeriodicThread(period){
+			eyePort.open("/img");
+			yarp.connect("/icubSim/cam/left", "/img");
+
+		    //creating the connection, associating names of the port to keywords
+			prop.put("device", "remote_controlboard");
+			prop.put("local", "/thread");
+			prop.put("remote", "/icubSim/head");
+			
+			pd.open(prop);//starting the polydriver
+			//opening the controllers we want to use
+			pd.view(ipc);
+			pd.view(enc);	
+
+            ipc->positionMove(4,0);
+            ipc->positionMove(3,0);
+            Time::delay(2);
+		};
+
+	private:		
+		Network yarp;
+		Property prop;
+		PolyDriver pd;
+		IPositionControl * ipc;
+		IEncoders *enc;
+		BufferedPort<ImageOf<PixelRgb>> eyePort;
+		
+		double eyeVerPosition, eyeHorPosition=0.0;
+    	double eyeEncoderVerPosition, eyeEncoderHorPosition=0.0;
+
+	protected:
+		void run() override {
+			ImageOf<PixelRgb> *image= eyePort.read();
+			int pixelMeanX,pixelMeanY = 0;
+			int numofpix = 0;
+			for(int x=0; x<image->width(); x++){
+			  for(int y=0; y<image->height(); y++){
+			  	PixelRgb& pixel =image->pixel(x,y);
+			  	if(pixel.r>2*pixel.g && pixel.r>2*pixel.b){
+			  	  pixelMeanX = pixelMeanX+x;
+                  pixelMeanY = pixelMeanY+y;
+			  	  numofpix++;
+			  	}
+			  }
+			}
+			pixelMeanX = pixelMeanX/numofpix;   
+            // cout<<"Pixel mean X is: "<<pixelMeanX<<" while the image width is: "<<image->width()<<endl;
+            pixelMeanY = pixelMeanY/numofpix;
+            // cout<<"Pixel mean Y is: "<<pixelMeanY<<" while the image height is: "<<image->height()<<endl;
+            // cout<<" "<<endl;
+
+			int errX=(pixelMeanX-40)-(image->width()/2);
+            int errY=pixelMeanY-(image->height()/2);
+            // cout<<"error X is: "<<errX<<endl;
+            // cout<<"error Y is: "<<errY<<endl;
+            // cout<<" "<<endl;
+
+			double degX=errX*0.2;
+            double degY=errY*0.2;
+            // cout<<"Deg X is: "<<degX<<endl;
+            // cout<<"Deg Y is: "<<degY<<endl;
+            // cout<<" "<<endl;
+
+			enc->getEncoder(4, &eyeEncoderHorPosition);
+            enc->getEncoder(3, &eyeEncoderVerPosition);
+
+            // cout<<"Encoder Position X: "<<eyeEncoderHorPosition<<endl;
+            // cout<<"Encoder Position Y: "<<eyeEncoderVerPosition<<endl;
+            // cout<<" "<<endl;
+
+		 	eyeHorPosition=eyeEncoderHorPosition;
+            eyeVerPosition=eyeEncoderVerPosition;
+
+			eyeHorPosition+=degX;
+            eyeVerPosition-=degY;
+            // cout<<"New Eye Position X: "<<eyeHorPosition<<endl;
+            // cout<<"New Eye Position Y: "<<eyeVerPosition<<endl;
+
+			ipc->positionMove(4, eyeHorPosition);	
+            ipc->positionMove(3, eyeVerPosition);
+
+            isMovementDone = (errX==0 && errY ==0) ? true : false;
+
+		}
+		void threadRelease() override {
+			pd.close();
+		}
+};
+
 
 int main(int argc, char *argv[]) {
     Network yarp; // initialize the network
@@ -40,6 +136,13 @@ int main(int argc, char *argv[]) {
     sphereReq.addFloat64(0);
     portRpc.write(sphereReq);
 
+    // start the thread
+    IcubThread it(0.5);
+    it.start();
+
+    // MyThread mt(0.5);
+    // mt.start();
+
     Time::delay(1);
 
     // to generate random position of sphere, where it should be located 25 pixel far from the centroid of left eye,
@@ -49,10 +152,8 @@ int main(int argc, char *argv[]) {
     float lastCentrX = 0.0; 
     float lastCentrY = 0.9;
 
-    for(int iter=0; iter<6; iter++){        
-        // getting random for each iteration time
-        srand(time(0));
-
+    for(int iter=0; iter<6; iter++){
+        cout<<"Number of iteration: "<<iter+1<<endl;        
         // to change position of the sphere, the command is world set ssph 1 value_x value_y value_z
         sphereReq.clear();
         sphereReq.addString("world");
@@ -60,24 +161,41 @@ int main(int argc, char *argv[]) {
         sphereReq.addString("ssph");
         sphereReq.addInt32(1);
 
-        // generate random number in range -0.2 to 0.2
-        float randomRangeX = -0.1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.1+0.1)));
-        float randomRangeY = -0.1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.1+0.1)));
 
-        // 0.2 to make sure that it's 25 pixel away
-        float newCentrX = (randomRangeX<0) ? lastCentrX+randomRangeX-0.2 : lastCentrX+randomRangeX+0.2;
-        float newCentrY = (randomRangeY<0) ? lastCentrY+randomRangeY-0.2 : lastCentrY+randomRangeY+0.2;
+        float newCentrX=0.4;
+        float newCentrY=0;
+        cout<<"Generating new random position..."<<endl;
+        while(newCentrX>0.3 || newCentrX<-0.3 || newCentrY>1.1 || newCentrY<0.6){
+            // getting random for each iteration time
+            srand(time(0));
+
+            // generate random number in range -0.2 to 0.2
+            float randomRangeX = -0.1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.1+0.1)));
+            float randomRangeY = -0.1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.1+0.1)));
+
+            // 0.2 to make sure that it's 25 pixel away
+            newCentrX = (randomRangeX<0) ? lastCentrX+randomRangeX-0.2 : lastCentrX+randomRangeX+0.2;
+            newCentrY = (randomRangeY<0) ? lastCentrY+randomRangeY-0.2 : lastCentrY+randomRangeY+0.2;
+
+            // cout<<"New Center is (x,y): ("<<newCentrX<<", "<<newCentrY<<")"<<endl;
+        }
+
+        cout<<"New random position is generated!"<<endl;
 
         sphereReq.addFloat64(newCentrX);
         sphereReq.addFloat64(newCentrY);
         sphereReq.addFloat64(0.8);
 
+        it.isMovementDone = false;
+
         portRpc.write(sphereReq);
 
-        // lastCentrX = newCentrX;
-        // lastCentrY = newCentrY;
+        lastCentrX = newCentrX;
+        lastCentrY = newCentrY;
 
-        Time::delay(1);
+        while(!it.isMovementDone){}
+        cout<<"System reached the desired position!"<<endl;
+        cout<<"------------------------------------"<<endl;
     }
 
     portRpc.close(); // closing the port after its finished
