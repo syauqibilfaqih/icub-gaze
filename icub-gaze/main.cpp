@@ -11,12 +11,17 @@ using namespace yarp::sig;
 using namespace yarp::dev;
 using namespace std;
 
+int iter;
+
 class IcubThread: public PeriodicThread{
 	public:
         bool isMovementDone;
 		IcubThread(double period):PeriodicThread(period){
 			eyePort.open("/img");
+            simPort.open("/simPortSender");
+
 			yarp.connect("/icubSim/cam/left", "/img");
+            yarp.waitConnection("/simPortSender", "/simPortReceiver");
 
 		    //creating the connection, associating names of the port to keywords
 			prop.put("device", "remote_controlboard");
@@ -58,6 +63,7 @@ class IcubThread: public PeriodicThread{
         IControlMode * icm;
 		IEncoders *enc;
 		BufferedPort<ImageOf<PixelRgb>> eyePort;
+        BufferedPort<Bottle> simPort;
 		
 		double eyeVerPosition, eyeHorPosition=0.0;
     	double eyeEncoderVerPosition, eyeEncoderHorPosition=0.0;
@@ -88,6 +94,13 @@ class IcubThread: public PeriodicThread{
             // cout<<"error X is: "<<errX<<endl;
             // cout<<"error Y is: "<<errY<<endl;
             // cout<<" "<<endl;
+            Bottle& simMessage = simPort.prepare();
+            simMessage.clear();
+            simMessage.addInt64(errX);
+            simMessage.addInt64(errY);
+            simMessage.addInt64(iter);
+            simPort.write();
+
 
 			double degX=errX*0.2;
             double degY=errY*0.2;
@@ -179,7 +192,7 @@ int main(int argc, char *argv[]) {
     float lastCentrX = 0.0; 
     float lastCentrY = 0.9;
 
-    for(int iter=0; iter<6; iter++){
+    for(iter=0; iter<6; iter++){
         cout<<"Number of iteration: "<<iter+1<<endl;        
         // to change position of the sphere, the command is world set ssph 1 value_x value_y value_z
         sphereReq.clear();
