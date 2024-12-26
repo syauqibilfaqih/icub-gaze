@@ -25,6 +25,9 @@ int main(int argc, char *argv[]) {
 	Property prop;
 	PolyDriver pd;
     IEncoders *enc;
+    BufferedPort<Bottle> simPort;
+    simPort.open("/simPortReceiver");
+    yarp.connect("/simPortSender", "/simPortReceiver");
 
     //creating the connection, associating names of the port to keywords
 	prop.put("device", "remote_controlboard");
@@ -42,6 +45,9 @@ int main(int argc, char *argv[]) {
     vector<double> neckYawPlot={};
     vector<double> eyesTiltPlot={};
     vector<double> eyesYawPlot={};
+    vector<int> errorXPlot={};
+    vector<int> errorYPlot={};
+    vector<int> iterPlot={};
 
     vector<double> timePlot={};
 
@@ -49,8 +55,9 @@ int main(int argc, char *argv[]) {
     double startTime = Time::now();
     double timeNow = 0;
     bool flag = true;
+    int iter = 0;
 
-    while(timeNow<60){
+    while(iter<6){
         // getting desired data
         double neckPitch, neckYaw, eyesTilt, eyesYaw=0.0;
         enc->getEncoder(0,&neckPitch);
@@ -63,6 +70,7 @@ int main(int argc, char *argv[]) {
         neckYawPlot.push_back(neckYaw);
         eyesTiltPlot.push_back(eyesTilt);
         eyesYawPlot.push_back(eyesYaw);
+
 
         // clear the data
         plt::cla();
@@ -92,19 +100,35 @@ int main(int argc, char *argv[]) {
 
         if(flag == true){   
             plt::legend();
-            flag=false;
+            // flag=false;
+        }
+
+        Bottle *simMessage = simPort.read();
+        if(simMessage != nullptr){
+            errorXPlot.push_back(simMessage->get(0).asFloat64());
+            errorYPlot.push_back(simMessage->get(1).asFloat64());
+            iter = simMessage->get(2).asInt64();
+            iterPlot.push_back(iter);
         }
         
         // Create a secondary plot for the error and iteration number
         plt::subplot(2, 1, 2);
-        // plt::plot(x, y2, "r");
-        plt::xlabel("Number of Iteration");
+        
+        plt::named_plot("error x",timePlot,errorXPlot,"r");
+        plt::named_plot("error y",timePlot,errorYPlot,"g");
+        plt::xlabel("Time (s)");
         plt::ylabel("Error (px)");
+
+        if(flag == true){   
+            plt::legend();
+            flag=false;
+        }
 
         plt::pause(0.001);
     }
     // Show the plot
     plt::show();
+    simPort.close();
 
     return 0;
 }
