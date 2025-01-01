@@ -45,7 +45,7 @@ then run the `icub-gaze` binary file
 ```
 ./icub-gaze
 ```
-# Issues 
+# Issues 26 December 2024
 - [X] Plot stuck (Solution by decreasing iteration number)
 - [X] No legend on subplot 2
 - [ ] High overdamp
