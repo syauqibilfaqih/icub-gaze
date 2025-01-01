@@ -45,6 +45,12 @@ then run the `icub-gaze` binary file
 ```
 ./icub-gaze
 ```
+5. Alternatively, the program can be ran using a single line, make sure the terminal is in icub-gaze directory, then run:
+```
+. run-plotter.sh
+```
+It will run both the robot program and the plotter to show the graph of the camera errors, eye positions, head positions, for two iterations.
+
 # Issues 26 December 2024
 - [X] Plot stuck (Solution by decreasing iteration number)
 - [X] No legend on subplot 2
