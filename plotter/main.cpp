@@ -129,6 +129,6 @@ int main(int argc, char *argv[]) {
     // Show the plot
     plt::show();
     simPort.close();
-
+    plt::close();
     return 0;
 }
