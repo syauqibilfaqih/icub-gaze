@@ -21,37 +21,48 @@ class IcubThread: public PeriodicThread{
             simPort.open("/simPortSender");
 
 			yarp.connect("/icubSim/cam/left", "/img");
-            yarp.waitConnection("/simPortSender", "/simPortReceiver");
+            // yarp.waitConnection("/simPortSender", "/simPortReceiver");
+            yarp.connect("/simPortSender", "/simPortReceiver");
 
 		    //creating the connection, associating names of the port to keywords
 			prop.put("device", "remote_controlboard");
 			prop.put("local", "/thread");
 			prop.put("remote", "/icubSim/head");
 			
-			pd.open(prop);//starting the polydriver
-			//opening the controllers we want to use
+            //starting the polydriver
+			pd.open(prop);
+			
+            //opening the controllers to be used
 			pd.view(ipc);
 			pd.view(enc);	
             pd.view(ivc);
             pd.view(icm);
 
-            ipc->positionMove(4,0);
-            ipc->positionMove(3,0);
-            icm->setControlMode(0,VOCAB_CM_POSITION);
-            icm->setControlMode(2,VOCAB_CM_POSITION);
-            ipc->positionMove(0,0);
-            ipc->positionMove(2,0);
-            Time::delay(2);
-
-            // try velocity control
-            // double vel,acc;
             icm->setControlMode(0,VOCAB_CM_VELOCITY);
             icm->setControlMode(2,VOCAB_CM_VELOCITY);
-            // ivc->velocityMove(0,0);
-            // Time::delay(2);
-            // ivc->getRefVelocity(0,&vel);
-            // ivc->getRefAcceleration(0,&acc);
-            // cout<<vel<<", "<<acc<<endl;
+            icm->setControlMode(3,VOCAB_CM_VELOCITY);
+            icm->setControlMode(4,VOCAB_CM_VELOCITY);
+            ivc->velocityMove(0,0);
+            ivc->velocityMove(2,0);
+            ivc->velocityMove(3,0);
+            ivc->velocityMove(4,0);
+
+            icm->setControlMode(0,VOCAB_CM_POSITION);
+            icm->setControlMode(2,VOCAB_CM_POSITION);
+            icm->setControlMode(3,VOCAB_CM_POSITION);
+            icm->setControlMode(4,VOCAB_CM_POSITION);
+            ipc->positionMove(0,0);
+            ipc->positionMove(2,0);
+            ipc->positionMove(3,0);
+            ipc->positionMove(4,0);
+
+            icm->setControlMode(0,VOCAB_CM_VELOCITY);
+            icm->setControlMode(2,VOCAB_CM_VELOCITY);
+            icm->setControlMode(3,VOCAB_CM_VELOCITY);
+            icm->setControlMode(4,VOCAB_CM_VELOCITY);
+            
+            Time::delay(2);
+
 		};
 
 	private:		
