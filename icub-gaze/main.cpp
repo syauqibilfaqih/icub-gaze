@@ -38,15 +38,6 @@ class IcubThread: public PeriodicThread{
             pd.view(ivc);
             pd.view(icm);
 
-            icm->setControlMode(0,VOCAB_CM_VELOCITY);
-            icm->setControlMode(2,VOCAB_CM_VELOCITY);
-            icm->setControlMode(3,VOCAB_CM_VELOCITY);
-            icm->setControlMode(4,VOCAB_CM_VELOCITY);
-            ivc->velocityMove(0,0);
-            ivc->velocityMove(2,0);
-            ivc->velocityMove(3,0);
-            ivc->velocityMove(4,0);
-
             icm->setControlMode(0,VOCAB_CM_POSITION);
             icm->setControlMode(2,VOCAB_CM_POSITION);
             icm->setControlMode(3,VOCAB_CM_POSITION);
@@ -60,6 +51,10 @@ class IcubThread: public PeriodicThread{
             icm->setControlMode(2,VOCAB_CM_VELOCITY);
             icm->setControlMode(3,VOCAB_CM_VELOCITY);
             icm->setControlMode(4,VOCAB_CM_VELOCITY);
+            ivc->velocityMove(0,0);
+            ivc->velocityMove(2,0);
+            ivc->velocityMove(3,0);
+            ivc->velocityMove(4,0);
             
             Time::delay(2);
 
@@ -213,21 +208,29 @@ int main(int argc, char *argv[]) {
         sphereReq.addInt32(1);
 
 
-        float newCentrX=0.4;
-        float newCentrY=0;
+        float newCentrX = 0.4, newCentrY=0.0;
         cout<<"Generating new random position..."<<endl;
-        while(newCentrX>0.3 || newCentrX<-0.3 || newCentrY>1.1 || newCentrY<0.6){
+
+        while(newCentrX>0.3 || newCentrX<-0.3){
             // getting random for each iteration time
             srand(time(0));
 
             // generate random number in range -0.2 to 0.2
             float randomRangeX = -0.1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.1+0.1)));
+            
+            // 0.2 to make sure that it's 25 pixel away
+            newCentrX = (randomRangeX<0) ? lastCentrX+randomRangeX-0.2 : lastCentrX+randomRangeX+0.2;
+            // cout<<"New Center is (x,y): ("<<newCentrX<<", "<<newCentrY<<")"<<endl;
+        }
+        while(newCentrY>1.1 || newCentrY<0.6){
+            // getting random for each iteration time
+            srand(time(0));
+
+            // generate random number in range -0.2 to 0.2
             float randomRangeY = -0.1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.1+0.1)));
 
             // 0.2 to make sure that it's 25 pixel away
-            newCentrX = (randomRangeX<0) ? lastCentrX+randomRangeX-0.2 : lastCentrX+randomRangeX+0.2;
             newCentrY = (randomRangeY<0) ? lastCentrY+randomRangeY-0.2 : lastCentrY+randomRangeY+0.2;
-
             // cout<<"New Center is (x,y): ("<<newCentrX<<", "<<newCentrY<<")"<<endl;
         }
 
