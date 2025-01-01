@@ -46,8 +46,8 @@ then run the `icub-gaze` binary file
 ./icub-gaze
 ```
 # Issues 
-- [ ] Plot stuck
-- [ ] No legend on subplot 2
+- [X] Plot stuck (Solution by decreasing iteration number)
+- [X] No legend on subplot 2
 - [ ] High overdamp
 - [ ] Slow head response
- 
+
