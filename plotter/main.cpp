@@ -15,10 +15,6 @@ using namespace yarp::sig;
 using namespace yarp::dev;
 using namespace std;
 
-/*
-you need to retrieve data from the eye and head using IPositionControl, and plot it vs time
-also, plot the error, get it from the icub-gaze
-*/
 
 int main(int argc, char *argv[]) {
     Network yarp;
@@ -47,7 +43,6 @@ int main(int argc, char *argv[]) {
     vector<double> eyesYawPlot={};
     vector<int> errorXPlot={};
     vector<int> errorYPlot={};
-    vector<int> iterPlot={};
 
     vector<double> timePlot={};
 
@@ -57,7 +52,7 @@ int main(int argc, char *argv[]) {
     bool flag = true;
     int iter = 0;
 
-    while(iter<6){
+    while(iter<2){
         // getting desired data
         double neckPitch, neckYaw, eyesTilt, eyesYaw=0.0;
         enc->getEncoder(0,&neckPitch);
@@ -77,7 +72,7 @@ int main(int argc, char *argv[]) {
 
         // Create the main plot for head positions
         plt::subplot(2, 1, 1);
-        plt::title("The Saccade Plot");
+        plt::title("The Saccade Plot, Number of Iteration = "+std::to_string(iter+1));
 
         // measuring time
         timeNow = Time::now() - startTime;
@@ -100,35 +95,77 @@ int main(int argc, char *argv[]) {
 
         if(flag == true){   
             plt::legend();
-            // flag=false;
+            flag=false;
         }
 
         Bottle *simMessage = simPort.read();
         if(simMessage != nullptr){
-            errorXPlot.push_back(simMessage->get(0).asFloat64());
-            errorYPlot.push_back(simMessage->get(1).asFloat64());
             iter = simMessage->get(2).asInt64();
-            iterPlot.push_back(iter);
+            if(iter<2){
+                errorXPlot.push_back(simMessage->get(0).asInt64());
+                errorYPlot.push_back(simMessage->get(1).asInt64());
+            }
+            else{
+                timePlot.pop_back();
+            }
         }
         
         // Create a secondary plot for the error and iteration number
         plt::subplot(2, 1, 2);
         
-        plt::named_plot("error x",timePlot,errorXPlot,"r");
-        plt::named_plot("error y",timePlot,errorYPlot,"g");
+        plt::named_plot("error x",timePlot,errorXPlot,"m");
+        plt::named_plot("error y",timePlot,errorYPlot,"c");
+
         plt::xlabel("Time (s)");
         plt::ylabel("Error (px)");
-
-        if(flag == true){   
-            plt::legend();
-            flag=false;
-        }
+ 
+        plt::legend();
 
         plt::pause(0.001);
     }
     // Show the plot
     plt::show();
     simPort.close();
-    plt::close();
     return 0;
 }
+
+
+/*
+#include "matplotlibcpp.h"
+#include <vector>
+#include <cmath>
+
+namespace plt = matplotlibcpp;
+
+double my_function1(double x) {
+    return std::sin(x);
+}
+
+double my_function2(double x) {
+    return std::cos(x);
+}
+
+int main() {
+    std::vector<double> x = {0, 1, 2, 3, 4, 5};
+    std::vector<double> y1, y2;
+    std::vector<double> y3 = {0,2,4,5,1,3};
+
+    for (double val : x) {
+        y1.push_back(my_function1(val));
+        y2.push_back(my_function2(val));
+    }
+
+    plt::subplot(2, 1, 1);
+    plt::plot(x, y1, {{"label", "sin(x)"}});
+    plt::legend();
+
+    plt::subplot(2, 1, 2);
+    plt::plot(x, y2, {{"label", "cos(x)"}});
+    plt::plot(x, y3, {{"label", "random"}});
+    plt::legend();
+
+    plt::show();
+
+    return 0;
+}
+*/
