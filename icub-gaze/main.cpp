@@ -75,7 +75,7 @@ class IcubThread: public PeriodicThread{
     	double eyeEncoderTiltPosition, eyeEncoderYawPosition=0.0;
         int errX, errY; 
         int lastErrX, lastErrY = 0;
-        double Kp = 0.22;
+        double Kp = 0.2;
         double Kd = 0;
 
 	protected:
@@ -99,19 +99,18 @@ class IcubThread: public PeriodicThread{
             // cout<<"Pixel mean Y is: "<<pixelMeanY<<" while the image height is: "<<image->height()<<endl;
             // cout<<" "<<endl;
 
-			errX=(pixelMeanX-60)-(image->width()/2);
+			errX=(pixelMeanX-40)-(image->width()/2);
             errY=pixelMeanY-(image->height()/2);
             // cout<<"error X is: "<<errX<<endl;
             // cout<<"error Y is: "<<errY<<endl;
             // cout<<" "<<endl;
-            if(iter<3){
-                Bottle& simMessage = simPort.prepare();
-                simMessage.clear();
-                simMessage.addInt64(errX);
-                simMessage.addInt64(errY);
-                simMessage.addInt64(iter);
-                simPort.write();
-            }
+
+            Bottle& simMessage = simPort.prepare();
+            simMessage.clear();
+            simMessage.addInt64(errX);
+            simMessage.addInt64(errY);
+            simMessage.addInt64(iter);
+            simPort.write();
 
 
 			double degX = errX*Kp + (lastErrX-errX)*Kd;
@@ -139,8 +138,8 @@ class IcubThread: public PeriodicThread{
             ipc->positionMove(3, eyeTiltPosition);
 
             if(abs(eyeEncoderYawPosition) != 0 && abs(eyeEncoderTiltPosition) != 0){
-                ivc->velocityMove(0,(eyeTiltPosition)*0.7);
-                ivc->velocityMove(2,-(eyeYawPosition)*0.7);
+                ivc->velocityMove(0,(eyeTiltPosition)*1.2);
+                ivc->velocityMove(2,-(eyeYawPosition)*1.2);
             }
             else{
                 ivc->velocityMove(0,0);
@@ -150,9 +149,11 @@ class IcubThread: public PeriodicThread{
             lastErrX = errX;
             lastErrY = errY;
 
-            isMovementDone = (abs(errX)<1 && abs(errY)<1 && abs(eyeEncoderTiltPosition)<0.09 && abs(eyeEncoderYawPosition)<0.09) ? true : false;
+            isMovementDone = (abs(errX)<2 && abs(errY)<2 && abs(eyeEncoderTiltPosition)<0.2 && abs(eyeEncoderYawPosition)<0.2) ? true : false;
 		}
 		void threadRelease() override {
+            ivc->velocityMove(0,0);
+            ivc->velocityMove(2,0);
 			pd.close();
 		}
 };
