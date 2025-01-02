@@ -75,8 +75,8 @@ class IcubThread: public PeriodicThread{
     	double eyeEncoderTiltPosition, eyeEncoderYawPosition=0.0;
         int errX, errY; 
         int lastErrX, lastErrY = 0;
-        double Kp = 0.15;
-        double Kd = 0;//.009;
+        double Kp = 0.22;
+        double Kd = 0;
 
 	protected:
 		void run() override {
@@ -104,12 +104,14 @@ class IcubThread: public PeriodicThread{
             // cout<<"error X is: "<<errX<<endl;
             // cout<<"error Y is: "<<errY<<endl;
             // cout<<" "<<endl;
-            Bottle& simMessage = simPort.prepare();
-            simMessage.clear();
-            simMessage.addInt64(errX);
-            simMessage.addInt64(errY);
-            simMessage.addInt64(iter);
-            simPort.write();
+            if(iter<3){
+                Bottle& simMessage = simPort.prepare();
+                simMessage.clear();
+                simMessage.addInt64(errX);
+                simMessage.addInt64(errY);
+                simMessage.addInt64(iter);
+                simPort.write();
+            }
 
 
 			double degX = errX*Kp + (lastErrX-errX)*Kd;
@@ -136,7 +138,7 @@ class IcubThread: public PeriodicThread{
 			ipc->positionMove(4, eyeYawPosition);	
             ipc->positionMove(3, eyeTiltPosition);
 
-            if(abs(eyeEncoderYawPosition) > 0.09 && abs(eyeEncoderTiltPosition) > 0.09){
+            if(abs(eyeEncoderYawPosition) != 0 && abs(eyeEncoderTiltPosition) != 0){
                 ivc->velocityMove(0,(eyeTiltPosition)*0.7);
                 ivc->velocityMove(2,-(eyeYawPosition)*0.7);
             }
@@ -148,7 +150,7 @@ class IcubThread: public PeriodicThread{
             lastErrX = errX;
             lastErrY = errY;
 
-            isMovementDone = (abs(errX)<1 && abs(errY)<1 && abs(eyeTiltPosition)<0.09 && abs(eyeYawPosition)<0.09) ? true : false;
+            isMovementDone = (abs(errX)<1 && abs(errY)<1 && abs(eyeEncoderTiltPosition)<0.09 && abs(eyeEncoderYawPosition)<0.09) ? true : false;
 		}
 		void threadRelease() override {
 			pd.close();
