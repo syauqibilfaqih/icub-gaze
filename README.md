@@ -51,9 +51,3 @@ then run the `icub-gaze` binary file
 ```
 It will run both the robot program and the plotter to show the graph of the camera errors, eye positions, head positions, for two iterations.
 
-# Issues 26 December 2024
-- [X] Plot stuck (Solution by decreasing iteration number)
-- [X] No legend on subplot 2
-- [ ] High overdamp
-- [ ] Slow head response
-
