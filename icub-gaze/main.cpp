@@ -99,7 +99,7 @@ class IcubThread: public PeriodicThread{
             // cout<<"Pixel mean Y is: "<<pixelMeanY<<" while the image height is: "<<image->height()<<endl;
             // cout<<" "<<endl;
 
-			errX=(pixelMeanX-40)-(image->width()/2);
+			errX=pixelMeanX-(image->width()/2);
             errY=pixelMeanY-(image->height()/2);
             // cout<<"error X is: "<<errX<<endl;
             // cout<<"error Y is: "<<errY<<endl;
@@ -149,7 +149,7 @@ class IcubThread: public PeriodicThread{
             lastErrX = errX;
             lastErrY = errY;
 
-            isMovementDone = (abs(errX)<2 && abs(errY)<2 && abs(eyeEncoderTiltPosition)<0.2 && abs(eyeEncoderYawPosition)<0.2) ? true : false;
+            isMovementDone = (abs(errX)<1 && abs(errY)<1 && abs(eyeEncoderTiltPosition)<0.2 && abs(eyeEncoderYawPosition)<0.2) ? true : false;
 		}
 		void threadRelease() override {
             ivc->velocityMove(0,0);
