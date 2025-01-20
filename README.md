@@ -1,4 +1,4 @@
-# icub gaze
+# icub-gaze
 ![spliticub](https://github.com/user-attachments/assets/28324395-c0bc-4e24-ab44-7a03ab153f8f)
 
 A repository on fast gaze shift performed in iCub Simulator.
