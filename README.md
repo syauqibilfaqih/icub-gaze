@@ -1,7 +1,7 @@
 # icub-gaze
-![spliticub](https://github.com/user-attachments/assets/28324395-c0bc-4e24-ab44-7a03ab153f8f)
+![image](https://github.com/user-attachments/assets/45a49702-db8b-4ecf-9cf7-43ba322faf82)
 
-A repository on fast gaze shift performed in iCub Simulator.
+A repository on fast gaze shift performed in iCub Simulator. [Link to Video](https://youtu.be/7WKQL9dG5fs)
 
 
 # Requirements
